@@ -1,0 +1,157 @@
+---
+title: "Lab2"
+format:
+  html: 
+   code-fold: true
+   message: false
+editor: visual
+---
+
+```{r}
+#| echo: false 
+#| message: false
+here::i_am("lab2.qmd")
+library(here)
+```
+
+### Exercise 1
+
+```{r}
+spotify <- readRDS("top-spotify-songs-from-20102019-by-year.Rds")
+library(dplyr)
+
+```
+
+## Question 1
+
+```{r}
+resultsong <- spotify %>% distinct(title)
+```
+
+The data set contains `r nrow(resultsong)` songs.
+
+```{r}
+resultartist <- spotify %>% distinct(`artist`)
+```
+
+The data set contains `r nrow(resultartist)` artists.
+
+```{r}
+resultgenre <- spotify %>% distinct(`top genre`)
+```
+
+The data set contains `r nrow(resultgenre)` musical genre.
+
+## Question 2
+
+```{r}
+songsperyear <- spotify |>
+  group_by(year) |>
+  summarize("number of songs" = n())
+knitr::kable(songsperyear)
+```
+
+## Question 3
+
+```{r}
+artistsong <- spotify %>% distinct(`artist`, title)
+mostpopular <-artistsong |>
+  group_by(`artist`) |>
+  summarize(number_of_songs = n()) |>
+  arrange(number_of_songs) |>
+  slice_max(number_of_songs)
+```
+
+The artist with the largest number of songs in the data set is `r mostpopular[1]` and the number of song that the artist made is `r mostpopular[,2]`.
+
+## Question 4
+
+```{r}
+resultgenre <- spotify |>
+    group_by(`top genre`)|>
+  summarise("mean tempo"=mean(bpm),
+          "median tempo"=median(bpm),
+          "minimum tempo"= min(bpm),
+          "maximum tempo"= max(bpm),
+         " number of songs"=n()
+         )
+knitr::kable(resultgenre)
+```
+
+## Question 5
+
+```{r}
+resultperyear <- spotify %>% distinct(spotify$title, .keep_all = TRUE) |>
+  group_by(year) |>
+  summarise(
+    median_energy = median(nrgy),
+median_danceability= median(dnce)) 
+
+```
+
+## Question 6
+
+```{r}
+library(ggplot2)
+library(tidyr)
+```
+
+```{r}
+long_resultperyear <- resultperyear|> pivot_longer(-year, names_to = "median", values_to="Value")
+ggplot(long_resultperyear, aes(x=year,y=Value, group=`median`, color=`median`)) +
+  geom_line() +
+  scale_x_continuous(breaks = seq(min(resultperyear$year), max(resultperyear$year), by = 2)) + 
+  labs(title = "Temporal evolution of median annual energy and danceability",
+       x = "Year",
+       y = "Median Value") 
+```
+
+### Exercise 2
+
+```{r}
+dropout <- readRDS("dropout.Rds")
+library(dplyr)
+```
+
+## Question 1
+
+```{r}
+q1 <- dropout |>
+  group_by(Gender,`Marital status`) |>
+  summarize(median_age_at_enrollment=median(`Age at enrollment`))
+q1[, 3] <- lapply(q1[, 3], function(x) round(x))
+```
+
+## Question 2
+
+```{r}
+q2 <- q1 %>%
+  pivot_wider(names_from = Gender, values_from = median_age_at_enrollment)
+knitr::kable(q2)
+
+```
+
+## Question 3
+
+```{r}
+q3 <- dropout |>
+  select(Target, starts_with("Curricular units 1st sem (credited)"):ends_with("Curricular units 2nd sem (without evaluations)")) |>
+  group_by(Target) |>
+  summarize(
+    across(starts_with("Curricular units 1st sem (credited)"):ends_with("Curricular units 2nd sem (without evaluations)"), ~ mean(.), .names = "mean {.col}")
+  )
+```
+
+## Question 4
+
+```{r}
+q4 <- q3 |>
+  pivot_longer(
+    cols = -Target, names_to = "Units", values_to = "Mean") |>
+  pivot_wider(names_from = Target,values_from = Mean )
+
+q4[, 2:4] <- lapply(q4[, 2:4], function(x) round(x, 2))
+
+knitr::kable(q4)
+
+```
